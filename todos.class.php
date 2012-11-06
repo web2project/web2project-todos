@@ -172,40 +172,26 @@ class CTodo extends w2p_Core_BaseObject
 		return $this->store();
 	}
 
-	public function store()
-	{
-        $stored = false;
-
-        $errorMsgArray = $this->check();
-        if (count($errorMsgArray) > 0) {
-          return $errorMsgArray;
-        }
+    public function hook_preStore() {
+        parent::hook_preStore();
+        
         $q = $this->_getQuery();
-		$this->w2PTrimAll();
+        $this->todo_updated = $q->dbfnNowWithTZ();
+        $this->todo_due = $this->resolveTimeframeEnd($this->_AppUI);
+        $this->todo_due = $this->_AppUI->convertToSystemTZ($this->todo_due);
 
         $this->todo_closed = null;
         if ($this->todo_status == 0) {
             $this->todo_closed = $q->dbfnNowWithTZ();
         }
-        $this->todo_updated = $q->dbfnNowWithTZ();
-        $this->todo_due = $this->resolveTimeframeEnd($this->_AppUI);
-        $this->todo_due = $this->_AppUI->convertToSystemTZ($this->todo_due);
+    }
 
-        if ($this->todo_id && $this->_perms->checkModuleItem('todos', 'edit', $this->todo_id)) {
-            if (($msg = parent::store())) {
-                return $msg;
-            }
-            $stored = true;
-        }
-        if (0 == $this->todo_id && $this->_perms->checkModuleItem('todos', 'add')) {
-            $this->todo_created = $q->dbfnNowWithTZ();
-            if (($msg = parent::store())) {
-                return $msg;
-            }
-            $stored = true;
-        }
-        return $stored;
-	}
+    public function hook_preCreate() {
+        parent::hook_preCreate();
+
+        $q = $this->_getQuery();
+        $this->todo_created = $q->dbfnNowWithTZ();
+    }
 
 	public function renderTimeframe() {
 		$dateInfo = array();
